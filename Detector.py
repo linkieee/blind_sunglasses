@@ -22,7 +22,7 @@ class Detector:
                 print("Không đọc được frame")
                 break
             if (self.frame_count % self.skip_frame) == 0:
-                results = self.model(frame)
+                results = self.model(frame, verbose=False)
                 for result in results:
                     boxes = result.boxes
                     if boxes is not None:
