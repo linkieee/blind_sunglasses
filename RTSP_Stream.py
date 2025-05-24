@@ -1,6 +1,9 @@
 import cv2
 import threading
 
+
+### Class này dùng để đọc luồng RTSP từ camera
+# Nó xong rồi đừng sửa gì ở đây nữa
 class RTSPStream:
     def __init__(self,url):
         self.cap = cv2.VideoCapture(url)
@@ -11,7 +14,6 @@ class RTSPStream:
         self.ret, self.frame = self.cap.read()
         self.stopped = False
         threading.Thread(target=self.update, daemon=True).start()
-        print("Đã khởi động luồng đọc RTMP.")
 
     def isOpened(self):
         return self.cap.isOpened()
