@@ -4,12 +4,48 @@ import subprocess
 import time
 from websockets.asyncio.server import serve
 from RTSP_Stream import RTSPStream
+from shared import proximity_event
+from shared import proximity_data
 from Detector import Detector
+from typing import Set
+import json
+
 
 # địa chị private của máy hoặc localhost
 stream_url = "rtsp://192.168.162.172:8554/cam1"
 # tạo biến global 
 detector = None
+connected_clients: Set[asyncio.StreamWriter] = set()
+
+async def broadcast_alert(message: str):
+    for ws in connected_clients.copy():
+        try:
+            await ws.send(message)  
+        except Exception as e:
+            print(f" Failed to send to a client: {e}")
+            connected_clients.remove(ws)
+
+
+async def monitor_proximity():
+    while True:
+        await asyncio.sleep(0.1)
+        if proximity_event.is_set():
+            print(" Detected proximity alert, broadcasting...")
+            try:
+                data = {
+                    "type": "proximity_alert",
+                    "direction": proximity_data.get("direction", "UNKNOWN"),
+                    "severity": proximity_data.get("severity", "LOW"),
+                    "label": proximity_data.get("label", "unknown")
+                }
+                await broadcast_alert(json.dumps(data))
+            except Exception as e:
+                print("Error sending alert:", e)
+            finally:
+                
+                proximity_event.clear()
+
+
 
 # hàm đọc stream và chạy tracking
 def run_detector():
@@ -32,15 +68,19 @@ def run_detector():
 
 # hàm xử lý kết nối từ client - nhận dữ liệu từ client và kiểm tra khoảng cách
 async def echo(websocket):
+    connected_clients.add(websocket)
     global detector
-    async for message in websocket:
-        if detector:
-            print(f"Received message: {message}")
-            if (int(message) < 50):
-                print("Distance is less than 50 cm, starting notice and capture...")    
-                detector.isCapture = True
-            else:
-                print("Distance is greater than 50 cm, stopping notice and capture...")
+    try:
+        async for message in websocket:
+            if detector:
+                print(f"Received message: {message}")
+                if (int(message) < 50):
+                    print("Distance is less than 50 cm, starting notice and capture...")    
+                    detector.isCapture = True
+                else:
+                    print("Distance is greater than 50 cm, stopping notice and capture...")
+    finally:
+        connected_clients.remove(websocket)
 
 # Hàm chính để khởi động server và kiểm tra trạng thái của mediatmx server
 async def main():
@@ -71,7 +111,10 @@ async def main():
     # Khởi động WebSocket server      
     async with serve(echo, "192.168.162.172", 8765) as server:
         print("WebSocket server started on ws://192.168.162.172:8765")
-        await server.serve_forever()
+        await asyncio.gather(
+                server.serve_forever(),
+                monitor_proximity()
+        )
 
 if __name__ == "__main__":
     asyncio.run(main())
