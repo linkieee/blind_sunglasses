@@ -721,3 +721,6 @@ paths:
   cam1:
     publishUser: ""
     publishPass: ""
+    source: publisher
+  all_others:
+  

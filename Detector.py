@@ -19,6 +19,8 @@ from shared import proximity_data
 class Detector:
     def __init__(self, stream_url):
         self.stream_url = stream_url
+        # self.cap = cap
+
         self.model = YOLO("best_v8n_2.pt")
         self.tracker  = DeepSort(max_age=30)
         self.class_names = self.model.names 
@@ -48,6 +50,9 @@ class Detector:
         if not cap.isOpened():
             print("Không mở được camera.")
             exit()
+        # if not self.cap.isOpened():
+        #     print("Không mở được camera.")
+        #     return
         prev_time = 0   
 
         previous_y2_values = {}
