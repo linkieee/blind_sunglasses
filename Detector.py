@@ -17,8 +17,8 @@ from shared import proximity_data
 
 
 class Detector:
-    def __init__(self, stream_url):
-        self.stream_url = stream_url
+    def __init__(self):
+        # self.stream_url = stream_url
         # self.cap = cap
 
         self.model = YOLO("best_v8n_2.pt")
@@ -37,6 +37,8 @@ class Detector:
             "chair", "door", "stair", "table", "wet sign"
         ]
         self.object_sizes = {}
+        self.paused = False
+        self.isCapture = False
     async def send_alert_ws(self, message):
         try:
             async with websockets.connect("ws://localhost:8765") as websocket:
@@ -45,24 +47,38 @@ class Detector:
 
         except Exception as e:
             print("[WebSocket Error]:", e)
-    def run(self):
-        self.cap = cv2.VideoCapture(self.stream_url)
-        if not self.cap.isOpened():
-            print("Không mở được camera.")
-            exit()
+
+    def pause(self):
+        self.paused = True
+        print("[DETECTOR] Paused")
+
+    def resume(self):
+        self.paused = False
+        print("[DETECTOR] Resumed")
+    def run(self, frame_streamer):
+        # self.cap = cv2.VideoCapture(self.stream_url)
+        # if not self.cap.isOpened():
+        #     print("Không mở được camera.")
+        #     exit()
         # if not self.cap.isOpened():
         #     print("Không mở được camera.")
         #     return
-        prev_time = 0   
-
-        previous_y2_values = {}
-        id2label = {}
-
-
+        prev_time = 0 
         while True:
-            ret, frame = self.cap.read()
-            if not ret:
-                break
+            if self.paused:
+                time.sleep(0.1)
+                continue
+            frame = frame_streamer.read()
+            if frame is None:
+                continue
+              
+
+            previous_y2_values = {}
+            id2label = {}
+
+            # ret, frame = self.cap.read()
+            # if not ret:
+            #     break
             # Tính thời gian hiện tại để tính FPS
             curr_time = time.time()
             fps = 1 / (curr_time - prev_time) if prev_time != 0 else 0
@@ -148,5 +164,5 @@ class Detector:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-        self.cap.release()
+
         cv2.destroyAllWindows()

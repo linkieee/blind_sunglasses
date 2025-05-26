@@ -4,6 +4,7 @@ import time
 class ImageComparer:
     def __init__(self):
         self.last_frame = None
+
     def capture_frame(self, cap):
         if cap is not None:
             ret, frame = cap.read()
@@ -16,7 +17,7 @@ class ImageComparer:
         diff = cv2.absdiff(img1, img2)
         return cv2.mean(diff)[0]
     
-    def monitor_for_fall(self, cap, on_confirmed_callback=None, threshold=20.0, duration=30, interval = 2):
+    def monitor_for_fall(self, frame_streamer, on_confirmed_callback=None, threshold=20.0, duration=30, interval = 2):
         print("[COMPARE] start monitor in 30s by image")
         stable_count = 0
         previous_frame = None
@@ -24,11 +25,15 @@ class ImageComparer:
         start_time = time.time()
 
 
-        while time.time() - start_time<duration:
-            frame = self.capture_frame(cap)
+        # while time.time() - start_time<duration:
+        #     frame = self.capture_frame(cap)
+        #     if frame is None:
+        #         print("[COMPARE] Không capture được khung hình.")
+        #         time.sleep(interval)
+        #         continue
+        while time.time() - start_time < duration:
+            frame = frame_streamer.read()
             if frame is None:
-                print("[COMPARE] Không capture được khung hình.")
-                time.sleep(interval)
                 continue
             
             if previous_frame is not None:
@@ -39,10 +44,10 @@ class ImageComparer:
             previous_frame = frame
             time.sleep(interval)
         
-        print(f"[COMPARE] kết quả: {stable_count} khung hình ổn định trong {duration} giây.")
+        print(f"[COMPARE] result: {stable_count} frame stabilization for {duration} second.")
         if stable_count>=(duration//interval)*0.7:
-            print("[ALERT] phát hiện người dùng bất tỉnh!")
+            print("[ALERT] Detect unconscious user!")
             if on_confirmed_callback:
                 on_confirmed_callback()
             else:
-                print("[SAFE] có sự chuyển động, không bất tỉnh.")
+                print("[SAFE] have movement, not unconscious.")
