@@ -34,43 +34,44 @@ def run_detector():
 async def echo(websocket):
     global detector
     async for message in websocket:
-        if detector:
+        # if detector:
             print(f"Received message: {message}")
-            if (int(message) < 50):
-                print("Distance is less than 50 cm, starting notice and capture...")    
-                detector.isCapture = True
-            else:
-                print("Distance is greater than 50 cm, stopping notice and capture...")
+            
+            # if (int(message) < 50):
+            #     print("Distance is less than 50 cm, starting notice and capture...")    
+            #     detector.isCapture = True
+            # else:
+            #     print("Distance is greater than 50 cm, stopping notice and capture...")
 
 # Hàm chính để khởi động server và kiểm tra trạng thái của mediatmx server
 async def main():
     # khởi chạy luồng detector trên một thread riêng
-    print("Starting detection...")
-    thread = threading.Thread(target=run_detector, daemon=True)
-    thread.start()
+    # print("Starting detection...")
+    # thread = threading.Thread(target=run_detector, daemon=True)
+    # thread.start()
 
-    # Kiểm tra xem mediatmx server đã chạy chưa
-    result = subprocess.run('netstat -ano | findstr /i /c:8554 /c:8000 /c:8889', capture_output=True, text=True, shell=True)
+    # # Kiểm tra xem mediatmx server đã chạy chưa
+    # result = subprocess.run('netstat -ano | findstr /i /c:8554 /c:8000 /c:8889', capture_output=True, text=True, shell=True)
 
-    # Nếu không có kết quả, khởi động mediatmx server trong một của sổ CMD mới để theo dõi
-    if not result.stdout:
-        print("Starting mediatmx server...")
-        # Chạy trên anaconda prompt nên cần đường dẫn tuyệt đốiđối
-        completed = subprocess.run(
-        'start cmd /k E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.exe E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.yml',
-        shell=True,
-        creationflags=subprocess.CREATE_NEW_CONSOLE)
+    # # Nếu không có kết quả, khởi động mediatmx server trong một của sổ CMD mới để theo dõi
+    # if not result.stdout:
+    #     print("Starting mediatmx server...")
+    #     # Chạy trên anaconda prompt nên cần đường dẫn tuyệt đốiđối
+    #     completed = subprocess.run(
+    #     'start cmd /k E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.exe E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.yml',
+    #     shell=True,
+    #     creationflags=subprocess.CREATE_NEW_CONSOLE)
         # Nếu chạy trên CMD thì chạy đoạn code dưới
         # completed = subprocess.run(
         # 'start cmd /k mediamtx.exe mediamtx.yml',
         # shell=True,
         # creationflags=subprocess.CREATE_NEW_CONSOLE)
-    else:
-        print("Mediatmx server is already running.")
+    # else:
+    #     print("Mediatmx server is already running.")
 
     # Khởi động WebSocket server      
-    async with serve(echo, "192.168.162.172", 8765) as server:
-        print("WebSocket server started on ws://192.168.162.172:8765")
+    async with serve(echo, "192.168.142.172", 8765) as server:
+        print("WebSocket server started on ws://192.168.142.172:8765")
         await server.serve_forever()
 
 if __name__ == "__main__":
