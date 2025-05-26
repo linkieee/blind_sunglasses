@@ -159,10 +159,10 @@ class Detector:
                     # Hiển thị FPS
             cv2.putText(frame, f"FPS: {fps:.2f}", (20, 75),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-
-            cv2.imshow("Foot-level Object Detection", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-
-
+            try:
+                cv2.imshow("Foot-level Object Detection", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
+            except:
+                return
         cv2.destroyAllWindows()

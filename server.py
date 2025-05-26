@@ -20,7 +20,7 @@ detector_started = threading.Event()
 comparer = ImageComparer()
 frame_streamer = None
 main_loop = None
-
+isCompare = False
 
 
 
@@ -38,17 +38,26 @@ async def broadcast_alert(message: str):
 
 async def monitor_proximity():
     while True:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(5)
         if proximity_event.is_set():
             print("[SYSTEM] Detected proximity alert, broadcasting...")
             try:
-                data = {
-                    "type": "proximity_alert",
-                    "direction": proximity_data.get("direction", "UNKNOWN"),
-                    "severity": proximity_data.get("severity", "LOW"),
-                    "label": proximity_data.get("label", "unknown")
-                }
-                await broadcast_alert(json.dumps(data))
+                if isCompare:
+                    data = {
+                        "type": "fall_confirmed",
+                        "message": "Fall detected and confirmed by continuous image similarity"
+                    }
+                    await broadcast_alert(json.dumps(data))
+                    
+                else:
+                    data = {
+                        "type": "proximity_alert",
+                        "direction": proximity_data.get("direction", "UNKNOWN"),
+                        "severity": proximity_data.get("severity", "LOW"),
+                        "label": proximity_data.get("label", "unknown")
+                    }
+                    await broadcast_alert(json.dumps(data))
+
             except Exception as e:
                 print("Error sending alert:", e)
             finally:
@@ -81,9 +90,9 @@ def run_detector():
 # hàm xử lý kết nối từ client - nhận dữ liệu từ client và kiểm tra khoảng cách
 async def echo(websocket):
     connected_clients.add(websocket)
-    global detector
     try:
         async for message in websocket:
+            data = json.loads(message)
             if detector:
                 print(f"[SYSTEM] Received message: {message}")
                 if message == "start":
@@ -92,35 +101,24 @@ async def echo(websocket):
                         threading.Thread(target=run_detector, daemon=True).start()
                         detector_started.set()
                         await websocket.send("Detection started.")
-                elif message == "fall":
-                    print("[FALL] fall signal from client, monitoring in 30s")
-                    if detector:
-                        detector.pause()
-                        def on_fall_confirmed():
-                            asyncio.run_coroutine_threadsafe(
-                                broadcast_alert(json.dumps({
-                                    "type": "fall_confirmed",
-                                    "message": "Fall detected and confirmed by continuous image similarity"
-                                })),
-                                main_loop  
-                            )
-                        def run_monitor():
-                            comparer.monitor_for_fall(frame_streamer, on_fall_confirmed)
-                            print("[SYSTEM] resume detector")
-                            detector.resume()
-                        threading.Thread(
-                            target=run_monitor,
-                            daemon=True
-                        ).start()
-                    else:
-                        print("[ERROR] detector not ready.")
+                elif data.get("isFall") == True:
 
-                elif (int(message) < 50):
-                    print("Distance is less than 50 cm, starting notice and capture...")    
-                    detector.isCapture = True
-                
-                else:
-                    print("Distance is greater than 50 cm, stopping notice and capture...")
+                    print("[FALL] fall signal from client, monitoring in 30s")
+                    isCompare = True
+                    detector.pause()
+                    def on_fall_confirmed():
+                        asyncio.run_coroutine_threadsafe(
+                        )
+                    def run_monitor():
+                        comparer.monitor_for_fall(frame_streamer, on_fall_confirmed)
+                        print("[SYSTEM] resume detector")
+                        detector.resume()
+                        isCompare = False
+                    threading.Thread(
+                        target=run_monitor,
+                        daemon=True
+                    ).start()
+
 
     finally:
         connected_clients.remove(websocket)
@@ -129,10 +127,6 @@ async def echo(websocket):
 async def main():
     # khởi chạy luồng detector trên một thread riêng
     # subprocess.Popen(["mediamtx\mediamtx.exe"], shell=True)
-    completed = subprocess.run(
-    'start cmd /k mediamtx\mediamtx.exe mediamtx\mediamtx.yml',
-    shell=True,
-    creationflags=subprocess.CREATE_NEW_CONSOLE)
     global frame_streamer, main_loop
     main_loop = asyncio.get_running_loop()
     print("[SYSTEM] Starting detector thread...")
@@ -150,6 +144,10 @@ async def main():
         # shell=True,
         # creationflags=subprocess.CREATE_NEW_CONSOLE)
         # Nếu chạy trên CMD thì chạy đoạn code dưới
+        completed = subprocess.run(
+        'start cmd /k mediamtx\mediamtx.exe mediamtx\mediamtx.yml',
+        shell=True,
+        creationflags=subprocess.CREATE_NEW_CONSOLE)
         
     else:
         print("[SYSTEM] Mediatmx server is already running.")

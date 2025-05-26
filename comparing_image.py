@@ -1,5 +1,6 @@
 import cv2
 import time
+from shared import proximity_event
 
 class ImageComparer:
     def __init__(self):
@@ -45,9 +46,10 @@ class ImageComparer:
             time.sleep(interval)
         
         print(f"[COMPARE] result: {stable_count} frame stabilization for {duration} second.")
-        if stable_count>=(duration//interval)*0.7:
+        if stable_count>=1:
             print("[ALERT] Detect unconscious user!")
-            if on_confirmed_callback:
-                on_confirmed_callback()
-            else:
-                print("[SAFE] have movement, not unconscious.")
+            # if on_confirmed_callback:
+            #     on_confirmed_callback()
+            proximity_event.set()
+            # else:
+            #     print("[SAFE] have movement, not unconscious.")
