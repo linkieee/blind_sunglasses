@@ -46,8 +46,8 @@ class Detector:
         except Exception as e:
             print("[WebSocket Error]:", e)
     def run(self):
-        cap = cv2.VideoCapture(self.stream_url)
-        if not cap.isOpened():
+        self.cap = cv2.VideoCapture(self.stream_url)
+        if not self.cap.isOpened():
             print("Không mở được camera.")
             exit()
         # if not self.cap.isOpened():
@@ -60,7 +60,7 @@ class Detector:
 
 
         while True:
-            ret, frame = cap.read()
+            ret, frame = self.cap.read()
             if not ret:
                 break
             # Tính thời gian hiện tại để tính FPS
@@ -132,6 +132,12 @@ class Detector:
                 cv2.putText(frame, "WARNING: Object approaching!", (20, 70),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 165, 255), 3)
                 #asyncio.run(self.send_alert_ws("Object approaching!"))
+                # if self.isCapture:
+                #     timestamp = time.strftime("%Y%m%d_%H%M%S")
+                #     filename = f"capture_{timestamp}.jpg"
+                #     cv2.imwrite(filename, frame)
+                #     print(f"[INFO] Captured frame: {filename}")
+                #     self.isCapture = False 
                 proximity_event.set()
 
                     # Hiển thị FPS
@@ -142,5 +148,5 @@ class Detector:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-        cap.release()
+        self.cap.release()
         cv2.destroyAllWindows()
