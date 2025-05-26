@@ -1,30 +1,41 @@
 import cv2
 import threading
+import queue
+import time
 
+class FrameStreamer:
+    def __init__(self, stream_url, maxsize=10):
+        self.cap = cv2.VideoCapture(stream_url)
+        self.frame_queue = queue.Queue(maxsize=maxsize)
+        self.running = False
+        self.stream_failed = False
 
-### Class này dùng để đọc luồng RTSP từ camera
-# Nó xong rồi đừng sửa gì ở đây nữa
-class RTSPStream:
-    def __init__(self,url):
-        self.cap = cv2.VideoCapture(url)
-        # Giảm độ phân giải để tăng tốc
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
-
-        self.ret, self.frame = self.cap.read()
-        self.stopped = False
+    def start(self):
+        self.running = True
         threading.Thread(target=self.update, daemon=True).start()
 
-    def isOpened(self):
-        return self.cap.isOpened()
-
     def update(self):
-        while not self.stopped:
-            self.ret, self.frame = self.cap.read()
+        failure_count = 0
+        while self.running and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if not ret:
+                failure_count += 1
+                if failure_count >= 30:  # sau ~0.3s nếu fail liên tục
+                    self.stream_failed = True
+                continue
+            failure_count = 0
+            self.stream_failed = False
+            if self.frame_queue.full():
+                self.frame_queue.get()
+            self.frame_queue.put(frame)
+            time.sleep(0.01)
 
     def read(self):
-        return self.ret, self.frame
+        try:
+            return self.frame_queue.get(timeout=1)
+        except queue.Empty:
+            return None
 
-    def release(self):
-        self.stopped = True
+    def stop(self):
+        self.running = False
         self.cap.release()
