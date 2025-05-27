@@ -13,8 +13,8 @@ def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("[CLIENT] Connected to MQTT broker successfully.")
         message = {
-            # "isFall": True
-            "command":"start"
+            "isFall": True
+            #"command":"start"
         }
         client.publish(mqtt_topic_command, json.dumps(message))
         print(f"[CLIENT] Sent command: {message}")

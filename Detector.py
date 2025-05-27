@@ -70,6 +70,10 @@ class Detector:
                 continue
             frame = frame_streamer.read()
             if frame is None:
+                if frame_streamer.stream_failed:
+                    print("[DETECTOR] Stream failed. Exiting detector...")
+                    cv2.destroyAllWindows()
+                    return 
                 continue
               
 

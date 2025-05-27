@@ -48,8 +48,10 @@ class ImageComparer:
         print(f"[COMPARE] result: {stable_count} frame stabilization for {duration} second.")
         if stable_count>=1:
             print("[ALERT] Detect unconscious user!")
-            # if on_confirmed_callback:
-            #     on_confirmed_callback()
-            proximity_event.set()
-            # else:
-            #     print("[SAFE] have movement, not unconscious.")
+            if on_confirmed_callback:
+                try:
+                    on_confirmed_callback()
+                except Exception as e:
+                    print(f"[ERROR] Callback execution failed: {e}")
+        else:
+            print("[SAFE] Movement detected, no fall.")
