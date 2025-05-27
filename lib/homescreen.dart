@@ -1,8 +1,11 @@
 import 'package:blind_sunglasses/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:blind_sunglasses/emergencycall.dart'; // màn hình khẩn cấp
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -17,36 +20,37 @@ class _HomeScreenState extends State<HomeScreen> {
       print("🔑 FCM Token: $token");
     });
 
+    // Khi đang mở app (foreground)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final title = message.notification?.title ?? "Không có tiêu đề";
-      final body = message.notification?.body ?? "Không có nội dung";
+      _handleNotification(message);
+    });
 
-      Future.delayed(Duration.zero, () {
-        if (!mounted) return;
+    // Khi mở app qua thông báo
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotification(message);
+    });
+  }
+
+  void _handleNotification(RemoteMessage message) {
+    final data = message.data;
+    final title = message.notification?.title ?? "Không có tiêu đề";
+    final body = message.notification?.body ?? "Không có nội dung";
+
+    Future.delayed(Duration.zero, () {
+      if (!mounted) return;
+
+      if (data['type'] == 'call_request') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => EmergencyCallNoti()),
+        );
+      } else {
         showDialog(
           context: context,
           barrierDismissible: false,
           builder: (_) => WarningDialog(title: title, content: body),
         );
-      });
-    });
-
-
-
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final title = message.notification?.title ?? "Không có tiêu đề";
-        final body = message.notification?.body ?? "Không có nội dung";
-
-        Future.delayed(Duration.zero, () {
-          if (!mounted) return;
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => WarningDialog(title: title, content: body),
-          );
-        });
-      });
+      }
     });
   }
 
@@ -54,9 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home'),
+        title: const Text('Home'),
       ),
-      body: Center(
+      body: const Center(
         child: Text('HomeScreen'),
       ),
     );
