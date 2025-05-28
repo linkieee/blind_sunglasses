@@ -1,7 +1,6 @@
 import asyncio
 import threading
 import subprocess
-import time
 from websockets.asyncio.server import serve
 from websockets import WebSocketServerProtocol
 
@@ -10,12 +9,11 @@ from shared import proximity_data
 from Detector import Detector
 from typing import Set
 import json
-import cv2
 from comparing_image import ImageComparer
 from RTSP_Stream import FrameStreamer
 
 # địa chị private của máy hoặc localhost
-stream_url = "rtsp://192.168.142.167:8554/cam1"
+stream_url = "rtsp://192.168.142.172:8554/cam1"
 detector_started = threading.Event()
 comparer = ImageComparer()
 frame_streamer = None
@@ -129,8 +127,6 @@ async def main():
     # subprocess.Popen(["mediamtx\mediamtx.exe"], shell=True)
     global frame_streamer, main_loop
     main_loop = asyncio.get_running_loop()
-    print("[SYSTEM] Starting detector thread...")
-    threading.Thread(target=run_detector, daemon=True).start()
    
     # Kiểm tra xem mediatmx server đã chạy chưa
     result = subprocess.run('netstat -ano | findstr /i /c:8554 /c:8000 /c:8889', capture_output=True, text=True, shell=True)
@@ -139,22 +135,24 @@ async def main():
     if not result.stdout:
         print("[SYSTEM] Starting mediatmx server...")
         # Chạy trên anaconda prompt nên cần đường dẫn tuyệt đốiđối
-        # completed = subprocess.run(
-        # 'start cmd /k E:\\Nam 3\\IoTHD\\server2\\blind_sunglasses\\mediamtx\\mediamtx.exe E:\\Nam 3\\IoTHD\\server2\\blind_sunglasses\\mediamtx\\mediamtx.yml',
-        # shell=True,
-        # creationflags=subprocess.CREATE_NEW_CONSOLE)
-        # Nếu chạy trên CMD thì chạy đoạn code dưới
         completed = subprocess.run(
-        'start cmd /k mediamtx\mediamtx.exe mediamtx\mediamtx.yml',
+        'start cmd /k E:\\Nam3\\IoT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.exe E:\\Nam3\\IoT_HD\\Project\\blind_sunglasses\\mediamtx\\mediamtx.yml',
         shell=True,
         creationflags=subprocess.CREATE_NEW_CONSOLE)
+        # Nếu chạy trên CMD thì chạy đoạn code dưới
+        # completed = subprocess.run(
+        # 'start cmd /k mediamtx\mediamtx.exe mediamtx\mediamtx.yml',
+        # shell=True,
+        # creationflags=subprocess.CREATE_NEW_CONSOLE)
         
     else:
         print("[SYSTEM] Mediatmx server is already running.")
 
+    # print("[SYSTEM] Starting detector thread...")
+    # threading.Thread(target=run_detector, daemon=True).start()
     # Khởi động WebSocket server      
-    async with serve(echo, "192.168.142.167", 8765) as server:
-        print("[SYSTEM] WebSocket server started on ws://192.168.142.167:8765")
+    async with serve(echo, "192.168.142.172", 8765) as server:
+        print("[SYSTEM] WebSocket server started on ws://192.168.142.172:8765")
         await asyncio.gather(
                 server.serve_forever(),
                 monitor_proximity()

@@ -6,6 +6,7 @@ import smbus2 as smbus
 import asyncio
 import math
 import threading
+import time
 import pyttsx3
 
 ADXL345_ADDRESS = 0x53
@@ -74,7 +75,8 @@ def received_message():
         async def listen():
             async with websockets.connect(uri) as websocket:
                 while True:
-                    message = await websocket.recv()
+                    # message = await websocket.recv()
+                    message = {"timestamp": "2025-05-26 22:46:13", "distance1": 91.29, "distance2": 49.29, "isFall": False}
                     print(f"Received message: {message}")
                     # Xử lý tin nhắn nếu cần
                     try:
@@ -82,6 +84,7 @@ def received_message():
                             notice = f"There is a {data['label']} on the {data['direction']}"
                             print(notice)
                             speak_message(notice)
+                            time.sleep(2)
                         else:
                             print("JSON thiếu 'label' hoặc 'direction'")               
                     except:
