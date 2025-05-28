@@ -12,11 +12,8 @@ from pydub.playback import play
 import io
 from pydub.effects import speedup
 
-# object = ['bàn', 'ghế', 'cửa', 'cầu thang']
-# direction = ['trái', 'phải', 'giữa']
-
 def speak(text):
-    tts = gTTS(text=text, lang='vi')
+    tts = gTTS(text=text, lang='en')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
     fp.seek(0)
@@ -29,29 +26,19 @@ def on_message(client, userdata, msg):
         data = json.loads(msg.payload.decode())
         print(f"Received message: {data}")
         label = data.get('label', None)
-        if label == 'table':
-            label = 'bàn'
-        elif label == 'chair':
-            label = 'ghế'
-        elif label == 'door':
-            label = 'cửa'
-        elif label == 'stairs':
-            label = 'cầu thang'
-        else:
-            label = None
         
         direction = data.get('direction', None)
         if direction == 'LEFT':
-            direction = 'bên trái'
+            direction = 'on the left'
         elif direction == 'RIGHT':
-            direction = 'bên phải'
+            direction = 'on the right'
         elif direction == 'CENTER':
-            direction = 'ở giữa'
+            direction = 'in the middle'
         else:
             direction = None
     
         if label and direction:
-            speak(f"Cảnh báo, có {label} {direction}.")
+            speak(f"Warning, there is a {label} {direction}.")
         else:
             print("JSON missing 'label' or 'direction'")
     except json.JSONDecodeError:
