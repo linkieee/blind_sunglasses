@@ -12,6 +12,7 @@ import cv2
 from comparing_image import ImageComparer
 from RTSP_Stream import FrameStreamer
 import paho.mqtt.client as mqtt
+from notice import FirebaseService
 
 
 # địa chị private của máy hoặc localhost
@@ -109,6 +110,23 @@ def on_message(client, userdata, msg):
             global isCompare
             isCompare = False
         threading.Thread(target=run_monitor, daemon=True).start()
+    elif data.get("warning") == "unconscious":
+        print("[WARNING] Unconscious detected, sending alert...")
+        try:
+            firebase_service = FirebaseService("E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\blind_sunglasses\\service_account.json")
+            ref = f"tokens/{data.get('device')}"
+            if firebase_service.get_document(ref) is None:
+                print("[ERROR] No notice data found in Firebase.")
+
+            token = firebase_service.get_document(ref)['token']
+            firebase_service.send_notification(
+                title="Unconscious Alert",
+                body="The user is unconscious, please check immediately.",
+                token=token
+            )
+        except Exception as e:
+            print("[MQTT] Failed to send unconscious warning:", e)
+        
 
 
     
