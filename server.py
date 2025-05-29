@@ -31,6 +31,8 @@ mqtt_topic_Calert = "blind_sunglasses/Calert"
 mqtt_topic_warning = "blind_sunglasses/warning"
 mqtt_topic_notice = "blind_sunglasses/notice"
 detector = Detector()
+has_fall_confirmed = False
+has_warning_unconscious = False
 
 
 def mqtt_alert(topic, message, qos=1):
@@ -91,8 +93,10 @@ def on_message(client, userdata, msg):
         print("[FALL] fall signal from client, monitoring in 30s")
         isCompare = True
         detector.pause()
-
+        device_id = data.get("device", "blind_user_1")
         def on_fall_confirmed():
+            global has_fall_confirmed
+
             print("[SYSTEM] Fall confirmed callback triggered by image comparison")
             try:
                 mqtt_alert(mqtt_topic_alert, json.dumps({
@@ -101,6 +105,8 @@ def on_message(client, userdata, msg):
                     "message": "Fall confirmed by image similarity",
                     "unconscious": True
                 }))
+                has_fall_confirmed = True
+                try_send_firebase_alert(device_id=device_id)
             except Exception as e:
                 print("[MQTT] Failed to send compare_fall_confirmed:", e)
         def run_monitor():
@@ -111,25 +117,34 @@ def on_message(client, userdata, msg):
             isCompare = False
         threading.Thread(target=run_monitor, daemon=True).start()
     elif data.get("warning") == "unconscious":
+        global has_warning_unconcious
         print("[WARNING] Unconscious detected, sending alert...")
+        has_warning_unconcious = True
+        try_send_firebase_alert(device_id=data.get("device", "blind_user_1"))
+
+# kiểm tra xem người dùng có bị ngã hay không (pi5 + compare image), nếu có thì gửi thông báo đến firebase
+def try_send_firebase_alert(device_id="blind_user_1"):
+    global has_fall_confirmed, has_warning_unconscious
+    if has_fall_confirmed and has_warning_unconscious:
         try:
             firebase_service = FirebaseService("E:\\Nam3\\IOT_HD\\Project\\blind_sunglasses\\blind_sunglasses\\service_account.json")
-            ref = f"tokens/{data.get('device')}"
-            if firebase_service.get_document(ref) is None:
-                print("[ERROR] No notice data found in Firebase.")
-
-            token = firebase_service.get_document(ref)['token']
+            ref = f"tokens/{device_id}"
+            doc = firebase_service.get_document(ref)
+            if doc is None or 'token' not in doc:
+                print("[ERROR] No notice data found in Firebase or token missing.")
+                return
+            token = doc['token']
             firebase_service.send_notification(
                 title="Unconscious Alert",
                 body="The user is unconscious, please check immediately.",
                 token=token
             )
+            print("[FIREBASE] Alert sent.")
+            # Reset flags
+            has_fall_confirmed = False
+            has_warning_unconscious = False
         except Exception as e:
-            print("[MQTT] Failed to send unconscious warning:", e)
-        
-
-
-    
+            print("[FIREBASE] Failed to send alert:", e)
 
 
 
