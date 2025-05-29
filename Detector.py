@@ -22,7 +22,7 @@ class Detector:
         # self.cap = cap
 
         self.model = YOLO("best_v8n_2.pt")
-        self.tracker  = DeepSort(max_age=30)
+        self.tracker  = DeepSort(max_age=30, embedder="osnet_x0_25", half=True, bgr=True, embedder_gpu=True)
         self.class_names = self.model.names 
 
 
