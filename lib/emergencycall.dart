@@ -1,10 +1,9 @@
-import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:flutter/material.dart';
 
 
 class EmergencyCall extends StatelessWidget {
   final VoidCallback? onClose;
-  const EmergencyCall({Key? key, this.onClose}) : super(key: key);
+  const EmergencyCall({super.key, this.onClose});
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +37,9 @@ class EmergencyCall extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  if (onClose != null) onClose!(); // Gọi hàm đóng nếu có
+                  if (onClose != null) onClose!();
                   Navigator.pop(context);
-                },// Thoát màn
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
                   shape: StadiumBorder(),
