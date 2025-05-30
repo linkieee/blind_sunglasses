@@ -40,6 +40,7 @@ dependencies:
   flutter_callkit_incoming: ^2.5.2
   uuid: ^4.5.1
   zego_express_engine: ^3.20.5
+  audioplayers: ^6.4.0
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,7 @@ flutter:
   uses-material-design: true
   assets:
     - lib/assets/images/
+    - lib/assets/sounds/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
