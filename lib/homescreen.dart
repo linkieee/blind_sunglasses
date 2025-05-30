@@ -1,7 +1,6 @@
-import 'package:blind_sunglasses/notification.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:blind_sunglasses/emergencycall.dart'; // màn hình khẩn cấp
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
