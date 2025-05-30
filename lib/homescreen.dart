@@ -24,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleNotification(message);
     });
-
     // Khi mở app qua thông báo
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       _handleNotification(message);
@@ -42,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (data['type'] == 'call_request') {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EmergencyCallNoti()),
+          MaterialPageRoute(builder: (_) => EmergencyCall()),
         );
       } else {
         showDialog(
