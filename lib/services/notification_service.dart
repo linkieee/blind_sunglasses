@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:blind_sunglasses/emergencycall.dart';
 import 'package:blind_sunglasses/notification.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -16,6 +15,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 bool isEmergencyScreenOpen = false;
+bool isNotificationOpen = false;
 
 
 class NotificationService {
@@ -54,9 +54,10 @@ class NotificationService {
     const channel = AndroidNotificationChannel(
       'emergency_channel',
       'Emergency Notifications',
-      description: 'Thông báo cuộc gọi khẩn cấp từ kính thông minh',
+      description: 'This channel is used for emergency notifications.',
       importance: Importance.max,
       playSound: true,
+      sound: RawResourceAndroidNotificationSound('alert'),
     );
 
     await _localNotifications.resolvePlatformSpecificImplementation<
@@ -100,16 +101,24 @@ class NotificationService {
         );
       } else {
         await _showAlarmNotification(message);
-        playAlarm();
       }
       return;
     }
 
     if (context != null) {
-      showDialog(
-        context: context,
-        builder: (_) => WarningDialog(title: title, content: body),
-      );
+      if (!isNotificationOpen) {
+        isNotificationOpen = true;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => WarningDialog(
+            title: title,
+            content: body,
+          ),
+        ).then((_) {
+          isNotificationOpen = false; // reset flag khi dialog đóng
+        });
+      }
     } else {
       RemoteNotification? notification = message.notification;
       AndroidNotification? android = message.notification?.android;
@@ -152,31 +161,26 @@ class NotificationService {
         android: AndroidNotificationDetails(
           'emergency_channel',
           'Emergency Notifications',
-          channelDescription: 'Thông báo cuộc gọi khẩn cấp từ người dùng kính',
+          channelDescription: 'This channel is used for emergency notifications.',
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
           playSound: true,
-          sound: null,
+          sound: RawResourceAndroidNotificationSound('alert'),
           enableVibration: true,
-          timeoutAfter: 30000,
           visibility: NotificationVisibility.public,
           fullScreenIntent: true,
+
         ),
       ),
       payload: 'Unconscious Alert',
     );
   }
 
-  void playAlarm() async {
-    final player = AudioPlayer();
-    await player.play(AssetSource('alarm.mp3'));
-  }
-
-
   Future<void> _setupMessageHandlers() async {
     await setupFlutterNotifications();
 
+    // Ensure listeners are only registered once
     FirebaseMessaging.onMessage.listen((message) {
       print('Received message: ${message.notification?.title}');
       showNotification(message);
@@ -186,4 +190,5 @@ class NotificationService {
       showNotification(message);
     });
   }
+
 }
