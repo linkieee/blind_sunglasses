@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:blind_sunglasses/emergencycall.dart';
 import 'package:blind_sunglasses/notification.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -70,7 +71,7 @@ class NotificationService {
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        if (details.payload == 'call_request') {
+        if (details.payload == 'Unconscious Alert') {
           navigatorKey.currentState?.push(
             MaterialPageRoute(builder: (_) => const EmergencyCall()),
           );
@@ -82,12 +83,12 @@ class NotificationService {
   }
 
   Future<void> showNotification(RemoteMessage message) async {
-    final type = message.data['type'];
+    final type = message.data['title'];
     final context = navigatorKey.currentContext;
     final title = message.notification?.title ?? message.data['title'] ?? "Không có tiêu đề";
     final body  = message.notification?.body  ?? message.data['body']  ?? "Không có nội dung";
 
-    if (type == 'call_request') {
+    if (type == 'Unconscious Alert') {
       if (context != null && !isEmergencyScreenOpen) {
         isEmergencyScreenOpen = true;
         navigatorKey.currentState?.push(
@@ -99,6 +100,7 @@ class NotificationService {
         );
       } else {
         await _showAlarmNotification(message);
+        playAlarm();
       }
       return;
     }
@@ -136,7 +138,7 @@ class NotificationService {
     // Ưu tiên lấy từ message.notification nếu có, sau đó tới message.data, cuối cùng là mặc định
     final title = message.notification?.title ??
         message.data['title'] ??
-        'EMERGENCY CALL';
+        'EMERGENCY ALERT';
 
     final body = message.notification?.body ??
         message.data['body'] ??
@@ -155,17 +157,21 @@ class NotificationService {
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('alarm'),
+          sound: null,
           enableVibration: true,
           timeoutAfter: 30000,
           visibility: NotificationVisibility.public,
           fullScreenIntent: true,
         ),
       ),
-      payload: 'call_request',
+      payload: 'Unconscious Alert',
     );
   }
 
+  void playAlarm() async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('alarm.mp3'));
+  }
 
 
   Future<void> _setupMessageHandlers() async {
