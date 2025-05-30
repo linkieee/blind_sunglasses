@@ -14,6 +14,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await NotificationService.instance.showNotification(message);
 }
 
+bool isEmergencyScreenOpen = false;
+
+
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -36,6 +39,10 @@ class NotificationService {
       alert: true,
       badge: true,
       sound: true,
+      provisional: false,
+      announcement: false,
+      carPlay: false,
+      criticalAlert: false,
     );
     print('Permission status: ${settings.authorizationStatus}');
   }
@@ -43,8 +50,7 @@ class NotificationService {
   Future<void> setupFlutterNotifications() async {
     if (_isFlutterLocalNotificationsInitialized) return;
 
-    // 🔔 Channel for emergency calls
-    const emergencyChannel = AndroidNotificationChannel(
+    const channel = AndroidNotificationChannel(
       'emergency_channel',
       'Emergency Notifications',
       description: 'Thông báo cuộc gọi khẩn cấp từ kính thông minh',
@@ -52,27 +58,17 @@ class NotificationService {
       playSound: true,
     );
 
-    // 🔔 Channel for regular high-priority notifications
-    const highChannel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
-      playSound: true,
+    await _localNotifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
+      channel,
     );
 
-    final androidPlugin = _localNotifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-
-    await androidPlugin?.createNotificationChannel(emergencyChannel);
-    await androidPlugin?.createNotificationChannel(highChannel);
-
-    const initSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     );
 
     await _localNotifications.initialize(
-      initSettings,
+      initializationSettings,
       onDidReceiveNotificationResponse: (details) {
         if (details.payload == 'call_request') {
           navigatorKey.currentState?.push(
@@ -86,15 +82,26 @@ class NotificationService {
   }
 
   Future<void> showNotification(RemoteMessage message) async {
-    final type = message.data['type'] ?? '';
+    final type = message.data['type'];
+    final context = navigatorKey.currentContext;
+    final title = message.notification?.title ?? message.data['title'] ?? "Không có tiêu đề";
+    final body  = message.notification?.body  ?? message.data['body']  ?? "Không có nội dung";
+
     if (type == 'call_request') {
-      await _showAlarmNotification(message);
+      if (context != null && !isEmergencyScreenOpen) {
+        isEmergencyScreenOpen = true;
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (_) => EmergencyCall(
+              onClose: () => isEmergencyScreenOpen = false,
+            ),
+          ),
+        );
+      } else {
+        await _showAlarmNotification(message);
+      }
       return;
     }
-
-    final context = navigatorKey.currentContext;
-    final title = message.notification?.title ?? "Không có tiêu đề";
-    final body = message.notification?.body ?? "Không có nội dung";
 
     if (context != null) {
       showDialog(
@@ -102,30 +109,43 @@ class NotificationService {
         builder: (_) => WarningDialog(title: title, content: body),
       );
     } else {
-      await _localNotifications.show(
-        message.hashCode,
-        title,
-        body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'High Importance Notifications',
-            channelDescription: 'This channel is used for important notifications.',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+      if (notification != null && android != null) {
+        await _localNotifications.show(
+          notification.hashCode,
+          title,
+          body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'high_importance_channel',
+              'High Importance Notifications',
+              channelDescription: 'This channel is used for important notifications.',
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
           ),
-        ),
-        payload: message.data.toString(),
-      );
+          payload: message.data.toString(),
+        );
+      }
     }
   }
 
   Future<void> _showAlarmNotification(RemoteMessage message) async {
+    // Ưu tiên lấy từ message.notification nếu có, sau đó tới message.data, cuối cùng là mặc định
+    final title = message.notification?.title ??
+        message.data['title'] ??
+        'EMERGENCY CALL';
+
+    final body = message.notification?.body ??
+        message.data['body'] ??
+        'Users may be in danger after falling!';
+
     await _localNotifications.show(
       0,
-      'EMERGENCY CALL',
-      'Users may be in danger after falling!',
+      title,
+      body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'emergency_channel',
@@ -146,14 +166,17 @@ class NotificationService {
     );
   }
 
+
+
   Future<void> _setupMessageHandlers() async {
+    await setupFlutterNotifications();
+
     FirebaseMessaging.onMessage.listen((message) {
-      print('Foreground message received: ${message.notification?.title}');
+      print('Received message: ${message.notification?.title}');
       showNotification(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      print('App opened from notification: ${message.notification?.title}');
       showNotification(message);
     });
   }

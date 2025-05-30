@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 
 class EmergencyCall extends StatelessWidget {
-  const EmergencyCall({super.key});
+  final VoidCallback? onClose;
+  const EmergencyCall({Key? key, this.onClose}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +37,10 @@ class EmergencyCall extends StatelessWidget {
               SizedBox(height: 100),
 
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (onClose != null) onClose!(); // Gọi hàm đóng nếu có
+                  Navigator.pop(context);
+                },// Thoát màn
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal,
                   shape: StadiumBorder(),
