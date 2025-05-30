@@ -1,9 +1,10 @@
 import 'package:zego_express_engine/zego_express_engine.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
 
-class EmergencyCallNoti extends StatelessWidget {
+class EmergencyCall extends StatelessWidget {
+  const EmergencyCall({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
