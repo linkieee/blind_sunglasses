@@ -10,7 +10,7 @@ while true; do
     if [ "$state" = "0" ]; then
         if [ $started -eq 0 ]; then
             echo "Start"
-            bash /home/pi5/stream/stream.sh &
+            bash /home/pi5/stream/stream.sh >> /home/pi5/stream/stream.log 2>&1 &
             STREAM_PID=$!
             sleep 0.5
             if ! ps -p $STREAM_PID > /dev/null; then
@@ -18,7 +18,7 @@ while true; do
                 continue
             fi
 
-            python /home/pi5/client/client.py &
+            python -u /home/pi5/client/client.py >> /home/pi5/client/client.log 2>&1 &
             CLIENT_PID=$!
             sleep 0.5
             if ! ps -p $CLIENT_PID > /dev/null; then

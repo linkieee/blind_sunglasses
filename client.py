@@ -83,10 +83,11 @@ def check_every_seconds(client):
             time.sleep(1)
         else:
             print("Values changed, stopping check.")
+            client.publish(publish_topic2, json.dumps({"warning": "none", "device": "U8F-MKH-GJ6"}))
             return
     if check_thread_running:
-        client.publish(publish_topic2, json.dumps({"waring": "unconscious"}))
-        print({"waring": "unconscious", "device": device})
+        client.publish(publish_topic2, json.dumps({"warning": "unconscious", "device": "U8F-MKH-GJ6"}))
+        print({"warning": "unconscious", "device": "U8F-MKH-GJ6"})
     check_thread_running = False
     
 
@@ -184,6 +185,7 @@ def main():
             if is_send_distance or is_send_acceleration:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 payload = {
+                    "device": "U8F-MKH-GJ6",
                     "timestamp": timestamp,
                     "left_distance": left_ultrasonic_value,
                     "right_distance2": left_ultrasonic_value,
