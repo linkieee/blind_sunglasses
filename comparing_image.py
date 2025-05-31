@@ -46,7 +46,7 @@ class ImageComparer:
             time.sleep(interval)
         
         print(f"[COMPARE] result: {stable_count} frame stabilization for {duration} second.")
-        if stable_count>=1:
+        if stable_count>=13:
             print("[ALERT] Detect unconscious user!")
             if on_confirmed_callback:
                 try:
