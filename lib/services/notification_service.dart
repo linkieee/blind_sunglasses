@@ -104,41 +104,43 @@ class NotificationService {
       }
       return;
     }
-
-    if (context != null) {
-      if (!isNotificationOpen) {
-        isNotificationOpen = true;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => WarningDialog(
-            title: title,
-            content: body,
-          ),
-        ).then((_) {
-          isNotificationOpen = false; // reset flag khi dialog đóng
-        });
-      }
-    } else {
-      RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
-      if (notification != null && android != null) {
-        await _localNotifications.show(
-          notification.hashCode,
-          title,
-          body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              'high_importance_channel',
-              'High Importance Notifications',
-              channelDescription: 'This channel is used for important notifications.',
-              importance: Importance.high,
-              priority: Priority.high,
-              icon: '@mipmap/ic_launcher',
+    if (type == 'Warning Notification') {
+      if (context != null) {
+        if (!isNotificationOpen) {
+          isNotificationOpen = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) =>
+                WarningDialog(
+                  title: title,
+                  content: body,
+                ),
+          ).then((_) {
+            isNotificationOpen = false; // reset flag khi dialog đóng
+          });
+        }
+      } else {
+        RemoteNotification? notification = message.notification;
+        AndroidNotification? android = message.notification?.android;
+        if (notification != null && android != null) {
+          await _localNotifications.show(
+            notification.hashCode,
+            title,
+            body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                'high_importance_channel',
+                'High Importance Notifications',
+                channelDescription: 'This channel is used for important notifications.',
+                importance: Importance.high,
+                priority: Priority.high,
+                icon: '@mipmap/ic_launcher',
+              ),
             ),
-          ),
-          payload: message.data.toString(),
-        );
+            payload: message.data.toString(),
+          );
+        }
       }
     }
   }
