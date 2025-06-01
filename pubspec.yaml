@@ -43,6 +43,8 @@ dependencies:
   audioplayers: ^6.4.0
   firebase_database: ^11.3.6
   intl: ^0.20.2
+  fl_chart: ^1.0.0
+
 
 dev_dependencies:
   flutter_test:
