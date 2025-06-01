@@ -137,6 +137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.11"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "567c64b3cb4cf82397aac55f4f0cbd3ca20d77c6c03bedbc4ceaddc08904aef7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.7"
   fake_async:
     dependency: transitive
     description:
@@ -185,6 +193,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.23.0"
+  firebase_database:
+    dependency: "direct main"
+    description:
+      name: firebase_database
+      sha256: e98c32b9462779f4c45eb036dcaf22cd6a17204e80f77c292bd1d05b08c8ef81
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.3.6"
+  firebase_database_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_database_platform_interface
+      sha256: "3e81c5e2152ad996309458f8338977989d81a44a692e27180db9380f6faffafb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.6+6"
+  firebase_database_web:
+    dependency: transitive
+    description:
+      name: firebase_database_web
+      sha256: "0289c1c7832b3ca79520517c54bf42a40b9bfefa8198906145ab17e75989d80f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.6+12"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -217,6 +249,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  fl_chart:
+    dependency: "direct main"
+    description:
+      name: fl_chart
+      sha256: "577aeac8ca414c25333334d7c4bb246775234c0e44b38b10a82b559dd4d764e7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -591,4 +631,4 @@ packages:
     version: "3.20.5"
 sdks:
   dart: ">=3.8.0 <4.0.0"
-  flutter: ">=3.27.0"
+  flutter: ">=3.27.4"
