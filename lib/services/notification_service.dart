@@ -1,9 +1,11 @@
+// notification_service.dart
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:blind_sunglasses/emergencycall.dart';
 import 'package:blind_sunglasses/notification.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -24,13 +26,12 @@ class NotificationService {
 
   final _messaging = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
-  bool _isFlutterLocalNotificationsInitialized = false;
 
   Future<void> initialize() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await _requestPermission();
+    await setupFlutterNotifications();
     await _setupMessageHandlers();
-
     final token = await _messaging.getToken();
     print('🔑 FCM Token: $token');
   }
@@ -40,30 +41,26 @@ class NotificationService {
       alert: true,
       badge: true,
       sound: true,
-      provisional: false,
-      announcement: false,
-      carPlay: false,
-      criticalAlert: false,
     );
     print('Permission status: ${settings.authorizationStatus}');
   }
 
   Future<void> setupFlutterNotifications() async {
-    if (_isFlutterLocalNotificationsInitialized) return;
+    final plugin = _localNotifications.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
 
-    const channel = AndroidNotificationChannel(
-      'emergency_channel',
-      'Emergency Notifications',
-      description: 'This channel is used for emergency notifications.',
-      importance: Importance.max,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound('alert'),
-    );
-
-    await _localNotifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(
-      channel,
-    );
+    for (String sound in ['sound1', 'sound2', 'sound3']) {
+      final channel = AndroidNotificationChannel(
+        'emergency_channel_$sound',
+        'Emergency Notifications ($sound)',
+        description: 'This channel is used for $sound alerts.',
+        importance: Importance.max,
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(sound),
+      );
+      await plugin?.createNotificationChannel(channel);
+      print('Created channel: ${channel.id}');
+    }
 
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -79,11 +76,23 @@ class NotificationService {
         }
       },
     );
+  }
 
-    _isFlutterLocalNotificationsInitialized = true;
+  Future<void> updateSoundSetting(String selectedSound) async {
+    final prefs = await SharedPreferences.getInstance();
+    final channelId = 'emergency_channel_$selectedSound';
+    await prefs.setString('selectedChannelId', channelId);
+    print('Switched to channel: $channelId');
   }
 
   Future<void> showNotification(RemoteMessage message) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('notificationEnabled') ?? true;
+    if (!isEnabled) {
+      print("Notification blocked by user settings.");
+      return;
+    }
+
     final type = message.data['title'];
     final context = navigatorKey.currentContext;
     final title = message.notification?.title ?? message.data['title'] ?? "Không có tiêu đề";
@@ -104,75 +113,68 @@ class NotificationService {
       }
       return;
     }
+
     if (type == 'Warning Notification') {
-      if (context != null) {
-        if (!isNotificationOpen) {
-          isNotificationOpen = true;
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) =>
-                WarningDialog(
-                  title: title,
-                  content: body,
-                ),
-          ).then((_) {
-            isNotificationOpen = false; // reset flag khi dialog đóng
-          });
-        }
+      if (context != null && !isNotificationOpen) {
+        isNotificationOpen = true;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => WarningDialog(title: title, content: body),
+        ).then((_) => isNotificationOpen = false);
       } else {
-        RemoteNotification? notification = message.notification;
-        AndroidNotification? android = message.notification?.android;
-        if (notification != null && android != null) {
-          await _localNotifications.show(
-            notification.hashCode,
-            title,
-            body,
-            NotificationDetails(
-              android: AndroidNotificationDetails(
-                'high_importance_channel',
-                'High Importance Notifications',
-                channelDescription: 'This channel is used for important notifications.',
-                importance: Importance.high,
-                priority: Priority.high,
-                icon: '@mipmap/ic_launcher',
-              ),
+        await _localNotifications.show(
+          0,
+          title,
+          body,
+          NotificationDetails(
+            android: AndroidNotificationDetails(
+              'high_importance_channel',
+              'High Importance Notifications',
+              channelDescription: 'This channel is used for important notifications.',
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
             ),
-            payload: message.data.toString(),
-          );
-        }
+          ),
+          payload: message.data.toString(),
+        );
       }
     }
   }
 
   Future<void> _showAlarmNotification(RemoteMessage message) async {
-    // Ưu tiên lấy từ message.notification nếu có, sau đó tới message.data, cuối cùng là mặc định
-    final title = message.notification?.title ??
-        message.data['title'] ??
-        'EMERGENCY ALERT';
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('notificationEnabled') ?? true;
+    if (!isEnabled) {
+      print("Alarm notification blocked by user settings.");
+      return;
+    }
+    final selectedChannelId = prefs.getString('selectedChannelId') ?? 'emergency_channel_sound2';
+    final sound = selectedChannelId.replaceAll('emergency_channel_', '');
 
-    final body = message.notification?.body ??
-        message.data['body'] ??
-        'Users may be in danger after falling!';
+    print('Using channel ID: $selectedChannelId with sound: $sound');
+
+    final title = message.notification?.title ?? message.data['title'] ?? 'EMERGENCY ALERT';
+    final body = message.notification?.body ?? message.data['body'] ?? 'User may be in danger.';
 
     await _localNotifications.show(
       0,
       title,
       body,
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
-          'emergency_channel',
+          selectedChannelId,
           'Emergency Notifications',
-          channelDescription: 'This channel is used for emergency notifications.',
+          channelDescription: 'Emergency notifications with $sound',
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('alert'),
+          sound: RawResourceAndroidNotificationSound(sound),
           enableVibration: true,
-          visibility: NotificationVisibility.public,
           fullScreenIntent: true,
-
+          visibility: NotificationVisibility.public,
         ),
       ),
       payload: 'Unconscious Alert',
@@ -180,11 +182,8 @@ class NotificationService {
   }
 
   Future<void> _setupMessageHandlers() async {
-    await setupFlutterNotifications();
-
-    // Ensure listeners are only registered once
     FirebaseMessaging.onMessage.listen((message) {
-      print('Received message: ${message.notification?.title}');
+      print('📩 Received message: ${message.notification?.title}');
       showNotification(message);
     });
 
@@ -192,5 +191,4 @@ class NotificationService {
       showNotification(message);
     });
   }
-
 }

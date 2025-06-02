@@ -26,7 +26,7 @@ class EmergencyCall extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "EMERGENCY CALL",
+                      "EMERGENCY NOTIFICATION",
                       style: TextStyle(
                         fontFamily: 'Montserrat',
                         fontSize: 26,
