@@ -2,9 +2,55 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+
+class NotificationModel {
+  final String id;
+  final String title;
+  final String body;
+  final String deviceId;
+  final String timestamp;
+
+  NotificationModel({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.deviceId,
+    required this.timestamp,
+  });
+
+  factory NotificationModel.fromJson(String key, Map<dynamic, dynamic> json) {
+    return NotificationModel(
+        id: key,
+        title: json['title'] ?? '',
+        body: json['body'] ?? '',
+        deviceId: json['device_id'] ?? '',
+        timestamp: json['timestamp'] ?? ''
+    );
+  }
+
+  DateTime get dateTime {
+    try {
+      return DateFormat("yyyy-MM-dd HH:mm:ss").parse(timestamp);
+    } catch (e) {
+      print("Parse error: $e - timestamp: $timestamp");
+      return DateTime.now();
+    }
+  }
+
+  String get formattedTime {
+    try {
+      final date = DateFormat("yyyy-MM-dd HH:mm:ss").parse(timestamp);
+      return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    } catch (e) {
+      return 'Unknown time';
+    }
+  }
+}
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  final VoidCallback? onShowAll;
+  const HomeScreen({Key? key, this.onShowAll}) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -15,17 +61,81 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String appStatus = "off";
   int numDetect = 0;
-  List<Map<String, dynamic>> notifications = [];
+  List<NotificationModel> notifications = [];
   int nowHourCount = 0;
   int prevHourCount = 0;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _setupFirebaseListeners();
+    _loadNotifications();
+  }
+
+  void _loadNotifications() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      final snapshot = await _database.child('notifications').get();
+
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final List<NotificationModel> loadedNotifications = [];
+        int nowHour = DateTime.now().hour;
+        int prevHour = (nowHour - 1) % 24;
+        int nowCount = 0;
+        int prevCount = 0;
+
+        data.forEach((key, value) {
+          if (value is Map) {
+            try {
+              final notification = NotificationModel.fromJson(key, value);
+              loadedNotifications.add(notification);
+
+              // Count notifications by hour
+              try {
+                final notificationHour = notification.dateTime.hour;
+                if (notificationHour == nowHour) nowCount++;
+                if (notificationHour == prevHour) prevCount++;
+              } catch (e) {
+                print('Error parsing hour for notification ${notification.id}: $e');
+              }
+            } catch (e) {
+              print('Error parsing notification $key: $e');
+            }
+          }
+        });
+
+        // Sort notifications by timestamp (newest first)
+        loadedNotifications.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+        setState(() {
+          notifications = loadedNotifications;
+          nowHourCount = nowCount;
+          prevHourCount = prevCount;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          notifications = [];
+          nowHourCount = 0;
+          prevHourCount = 0;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading notifications: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   void _setupFirebaseListeners() {
+    // Listen to app status and detection count
     _database.child('app').onValue.listen((event) {
       if (event.snapshot.exists) {
         final data = Map<String, dynamic>.from(event.snapshot.value as Map);
@@ -36,48 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
+    // Listen to notifications for real-time updates
     _database.child('notifications').onValue.listen((event) {
-      if (event.snapshot.exists) {
-        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
-        List<Map<String, dynamic>> notificationsList = [];
-        int nowHour = DateTime.now().hour;
-        int prevHour = (nowHour - 1) % 24;
-        int nowCount = 0;
-        int prevCount = 0;
-
-        data.forEach((key, value) {
-          final notification = Map<String, dynamic>.from(value);
-          notification['key'] = key;
-          final payload = Map<String, dynamic>.from(
-            notification['payload'] ?? {},
-          );
-          final timestampStr = payload['timestamp'] ?? '';
-          final timestamp = DateTime.tryParse(timestampStr);
-
-          if (timestamp != null) {
-            if (timestamp.hour == nowHour) nowCount++;
-            if (timestamp.hour == prevHour) prevCount++;
-          }
-
-          notificationsList.add({
-            'title': payload['title'] ?? '',
-            'body': notification['body'] ?? '',
-            'timestamp': timestampStr,
-          });
-        });
-
-        notificationsList.sort(
-          (a, b) => DateTime.parse(
-            b['timestamp'],
-          ).compareTo(DateTime.parse(a['timestamp'])),
-        );
-
-        setState(() {
-          notifications = notificationsList;
-          nowHourCount = nowCount;
-          prevHourCount = prevCount;
-        });
-      }
+      _loadNotifications();
     });
   }
 
@@ -106,6 +177,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     ];
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dateTime = DateFormat("yyyy-MM-dd HH:mm:ss").parse(timestamp);
+      return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
+    } catch (e) {
+      return timestamp;
+    }
   }
 
   @override
@@ -200,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SizedBox(height: 20),
 
-                // Notification Card
+                // Latest Notification Card
                 if (notifications.isNotEmpty)
                   Card(
                     color: Colors.white,
@@ -225,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Text(
-                                notifications[0]['timestamp'] ?? '',
+                                _formatTimestamp(notifications[0].timestamp),
                                 style: TextStyle(
                                   fontFamily: 'Montserrat',
                                   color: Colors.grey[600],
@@ -236,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            notifications[0]['title'] ?? 'Alert',
+                            notifications[0].title,
                             style: TextStyle(
                               fontFamily: 'Montserrat',
                               fontSize: 16,
@@ -246,18 +326,30 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            notifications[0]['body'] ?? '',
+                            notifications[0].body,
                             style: TextStyle(
                               fontFamily: 'Montserrat',
                               fontSize: 14,
                               color: Colors.grey[700],
                             ),
                           ),
+                          if (notifications[0].deviceId.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Device: ${notifications[0].deviceId}',
+                                style: TextStyle(
+                                  fontFamily: 'Montserrat',
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: widget.onShowAll, // FIX: Thêm widget. prefix
                               child: const Text(
                                 'Show all',
                                 style: TextStyle(
@@ -272,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
+
                 // Status + Chart Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -387,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: BarChart(
                                     BarChartData(
                                       alignment: BarChartAlignment.spaceAround,
-                                      maxY: 5,
+                                      maxY: (nowHourCount > prevHourCount ? nowHourCount : prevHourCount).toDouble() + 1,
                                       barTouchData: BarTouchData(
                                         enabled: false,
                                       ),
