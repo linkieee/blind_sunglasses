@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:blind_sunglasses/loginscreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:blind_sunglasses/services/notification_service.dart';
-import 'package:restart_app/restart_app.dart';
 
 
 class SettingsScreen extends StatefulWidget {
