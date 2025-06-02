@@ -21,7 +21,7 @@ class Detector:
         # self.stream_url = stream_url
         # self.cap = cap
 
-        self.model = YOLO("best_v8n_2.pt")
+        self.model = YOLO("best_v8n.pt")
         self.tracker  = DeepSort(max_age=30, embedder="mobilenet", half=True, bgr=True, embedder_gpu=True)
         self.class_names = self.model.names 
 
@@ -34,8 +34,16 @@ class Detector:
         #     "wall cover - 3d tiles", "wall panel", "wardrobe", "window", "stairs"
         # ]
         self.target_classes = [
-            "chair", "door", "stair", "table", "wet sign"
+            "chair",
+            "sofa",
+            "table",
+            "door",
+            "stairs"
         ]
+
+        # self.target_classes = [
+        #     "chair", "door", "stair", "table", "wet sign"
+        # ]
         self.object_sizes = {}
         self.paused = False
         self.isCapture = False
@@ -151,13 +159,6 @@ class Detector:
             if proximity_alert:
                 cv2.putText(frame, "WARNING: Object approaching!", (20, 70),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 165, 255), 3)
-                #asyncio.run(self.send_alert_ws("Object approaching!"))
-                # if self.isCapture:
-                #     timestamp = time.strftime("%Y%m%d_%H%M%S")
-                #     filename = f"capture_{timestamp}.jpg"
-                #     cv2.imwrite(filename, frame)
-                #     print(f"[INFO] Captured frame: {filename}")
-                #     self.isCapture = False 
                 proximity_event.set()
 
                     # Hiển thị FPS

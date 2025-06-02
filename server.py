@@ -16,14 +16,14 @@ from notice import FirebaseService
 
 
 # địa chị private của máy hoặc localhost
-stream_url = "rtsp://172.16.16.189:8554/cam1"
+stream_url = "rtsp://10.0.1.66:8554/cam1"
 detector_started = threading.Event()
 comparer = ImageComparer()
 frame_streamer = None
 main_loop = None
 isCompare = False
 mqtt_client = None
-mqtt_broker  = "172.16.17.83"
+mqtt_broker  = "44.202.133.111"
 mqtt_port = 1883
 mqtt_topic_command = "sunglasses/commands"
 mqtt_topic_alert = "sunglasses/alerts"
