@@ -13,17 +13,27 @@ class Navigation extends StatefulWidget {
 class _NavigationState extends State<Navigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomeScreen(),
-    const NotificationScreen(),
-    const SettingsScreen()
-  ];
+  late List<Widget> _pages; // 👈 Đổi từ final -> late để khởi tạo sau
 
   final List<Color> _selectedColors = [
     const Color(0xFF368C8B), // Home - Teal
     const Color(0xFFFF6B6B), // Notifications - Red
     const Color(0xFF4ECDC4), // Settings - Light Blue
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomeScreen(onShowAll: () {
+        setState(() {
+          _currentIndex = 1; // chuyển sang tab Notifications
+        });
+      }),
+      const NotificationScreen(),
+      const SettingsScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
