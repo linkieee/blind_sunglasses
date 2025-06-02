@@ -115,13 +115,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE3F2FD),
-              Color(0xFFF8F9FA),
-            ],
+          image: DecorationImage(
+            image: AssetImage('lib/assets/images/background.jpg'),
+            fit: BoxFit.cover,
           ),
         ),
         child: SafeArea(
@@ -228,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       Spacer(),
                       Container(
-                        width: double.infinity,
+                        width: 200,
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () {

@@ -176,7 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
     ];
+
   }
 
   String _formatTimestamp(String timestamp) {
@@ -190,7 +192,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Scaffold(
+      body: Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
           image: AssetImage('lib/assets/images/background.jpg'),
@@ -250,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const Icon(
                             Icons.person,
                             color: Colors.white,
-                            size: 30,
+                            size: 40,
                           ),
                         ),
                       ],
@@ -355,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                   fontFamily: 'Montserrat',
                                   fontSize: 15,
-                                  color: Colors.grey,
+                                  color: Color(0xFF329C95),
                                 ),
                               ),
                             ),
@@ -503,7 +506,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         leftTitles: AxisTitles(
                                           sideTitles: SideTitles(
-                                            showTitles: false,
+                                            showTitles: true,
+                                            reservedSize: 24,
+                                            getTitlesWidget: (value, meta) {
+                                              return Text(
+                                                value.toInt().toString(),
+                                                style: const TextStyle(
+                                                  fontFamily: 'Montserrat',
+                                                  fontSize: 10,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
                                           ),
                                         ),
                                         topTitles: AxisTitles(
@@ -538,6 +552,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }
