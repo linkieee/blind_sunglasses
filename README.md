@@ -31,7 +31,7 @@ This project presents an **IoT-powered wearable device** designed to assist visu
 - Flutter
 
 ### 📸Smart Glasses Prototype
-![image](https://github.com/user-attachments/assets/65bde735-4989-4a1b-92d5-82d8395025f8)
+![blind_glasses](https://github.com/user-attachments/assets/9effbb5e-a715-4db3-b4ad-1ad7a76a1f3d)
 
 ![device](https://github.com/user-attachments/assets/a065e606-068f-4c8f-9518-d013dc9618f7)
 
